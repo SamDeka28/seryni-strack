@@ -1,0 +1,32 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "46ad25c87127ccf5aeaedde761473f34"
+name = "seryni-strack"
+handle = "seryni-strack"
+application_url = "https://dis-lopez-types-md.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2025-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_app_proxy,read_customers,read_metaobject_definitions,read_metaobjects,read_order_edits,read_orders,read_own_subscription_contracts,read_product_listings,read_products,write_app_proxy,write_customers,write_metaobject_definitions,write_metaobjects,write_order_edits,write_orders,write_products"
+
+[auth]
+redirect_urls = ["https://dis-lopez-types-md.trycloudflare.com/auth/callback", "https://dis-lopez-types-md.trycloudflare.com/auth/shopify/callback", "https://dis-lopez-types-md.trycloudflare.com/api/auth/callback"]
+
+[pos]
+embedded = false
