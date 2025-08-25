@@ -29,6 +29,23 @@ export default function SyncSubscription() {
     }
   };
 
+  const handleTestAPI = async () => {
+    console.log('Test API submission triggered');
+    try {
+      await fetcher.submit(
+        {}, 
+        { 
+          method: 'POST', 
+          action: '/admin/test',
+          encType: 'application/json'
+        }
+      );
+    } catch (error) {
+      console.error('Submission error:', error);
+    }
+  };
+
+
   return (
     <Page>
       <Layout>
@@ -52,6 +69,23 @@ export default function SyncSubscription() {
               <Text color={fetcher.data.success ? "success" : "critical"}>
                 {fetcher.data.success
                   ? `✅ ${fetcher.data.processedOrders} orders processed`
+                  : `❌ Error: ${fetcher.data.error}`}
+              </Text>
+            )}
+
+            {/* Option 2: TEST submission */}
+            <Button
+              primary
+              loading={isRunning}
+              onClick={handleTestAPI}
+            >
+              Test api
+            </Button>
+
+            {fetcher.data && (
+              <Text color={fetcher.data.success ? "success" : "critical"}>
+                {fetcher.data.success
+                  ? `✅ ${fetcher.data.message} orders processed`
                   : `❌ Error: ${fetcher.data.error}`}
               </Text>
             )}
