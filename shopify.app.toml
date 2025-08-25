@@ -1,9 +1,9 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "46ad25c87127ccf5aeaedde761473f34"
-name = "seryni-strack"
-handle = "seryni-strack"
-application_url = "https://ch-engage-destiny-monaco.trycloudflare.com"
+client_id = "e3e4dced4e35e62821ce764fb8e55c06"
+name = "subscription-tracker"
+handle = "subscription-tracker-1"
+application_url = "https://seryni-strack.onrender.com"
 embedded = true
 
 [build]
@@ -23,10 +23,10 @@ api_version = "2025-07"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_app_proxy,read_customers,read_metaobject_definitions,read_metaobjects,read_order_edits,read_orders,read_own_subscription_contracts,read_product_listings,read_products,write_app_proxy,write_customers,write_metaobject_definitions,write_metaobjects,write_order_edits,write_orders,write_products"
+scopes = "read_app_proxy,read_customers,read_metaobject_definitions,read_metaobjects,read_order_edits,read_orders,read_product_listings,read_products,write_app_proxy,write_customers,write_metaobject_definitions,write_metaobjects,write_order_edits,write_orders,write_products"
 
 [auth]
-redirect_urls = ["https://ch-engage-destiny-monaco.trycloudflare.com/auth/callback", "https://ch-engage-destiny-monaco.trycloudflare.com/auth/shopify/callback", "https://ch-engage-destiny-monaco.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://seryni-strack.onrender.com/auth/callback", "https://seryni-strack.onrender.com/auth/shopify/callback", "https://seryni-strack.onrender.com/api/auth/callback"]
 
 [pos]
 embedded = false
