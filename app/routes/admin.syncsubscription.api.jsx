@@ -33,6 +33,7 @@ export const action = async ({ request }) => {
                         sellingPlan { sellingPlanId }
                         variant {
                           id
+                          title
                           product { id }
                         }
                       }
@@ -73,6 +74,7 @@ export const action = async ({ request }) => {
               sellingPlanId: sellingPlanEdge.node.sellingPlan.sellingPlanId,
               productId: variant?.product?.id || "",
               variantId: variant?.id || "",
+              variantTitle: variant?.title || "",
               admin,
             });
 
@@ -104,12 +106,27 @@ export const action = async ({ request }) => {
 };
 
 /**
- * Remove app-generated tags like "Monthly-Free-Gift" and "Monthly-order-X-no-Gifts"
+ * Remove app-managed variant tags (keep legacy monthly tags)
  */
 function stripAppTags(tags = []) {
   return tags.filter(
-    (t) => !/^Monthly-(Free-Gift|order-\d+-no-Gifts)$/i.test(t)
+    (t) => !/^Buy \d+(?: Get \d+ Free)?$/i.test(t)
   );
+}
+
+function computeVariantTag(variantTitle = "", cycle = 1) {
+  if (!variantTitle) return "";
+  if (cycle === 1) return variantTitle.trim();
+  const match = /Buy\s+(\d+)/i.exec(variantTitle);
+  if (match) {
+    const qty = match[1];
+    return `Buy ${qty}`;
+  }
+  return variantTitle.trim();
+}
+
+function computeMonthlyTag(cycle = 1) {
+  return cycle === 1 ? "Monthly-Free-Gift" : `Monthly-order-${cycle}-no-Gifts`;
 }
 
 /**
@@ -117,10 +134,10 @@ function stripAppTags(tags = []) {
  * - Fetch all orders for the customer
  * - Filter by sellingPlanId
  * - Compute cycle number
- * - Strip app tags + apply correct one
+ * - Keep monthly tag + add variant-based tag
  * - Persist cycle in SubscriptionCycle table
  */
-async function processOrder({ order, sellingPlanId, productId, variantId, admin }) {
+async function processOrder({ order, sellingPlanId, productId, variantId, variantTitle, admin }) {
   // Extract numeric customer ID from gid://shopify/Customer/123456789
   const customerGid = order.customer.id;
   const customerId = customerGid.split("/").pop();
@@ -165,8 +182,8 @@ async function processOrder({ order, sellingPlanId, productId, variantId, admin 
 
   // 3) Compute cycle number (index in order history)
   const cycle = relevantOrders.findIndex((o) => o.id === order.id) + 1;
-  const tag =
-    cycle === 1 ? "Monthly-Free-Gift" : `Monthly-order-${cycle}-no-Gifts`;
+  const monthlyTag = computeMonthlyTag(cycle);
+  const variantTag = computeVariantTag(variantTitle, cycle);
 
   // 4) Update subscriptionCycle table
   const subscriptionKey = `shop:${shop}::cust:${customerId}::sp:${sellingPlanId}`;
@@ -175,7 +192,7 @@ async function processOrder({ order, sellingPlanId, productId, variantId, admin 
     create: {
       shop,
       subscriptionKey,
-      customerId,
+      customerId:customerGid,
       productId,
       variantId,
       cycle,
@@ -183,9 +200,9 @@ async function processOrder({ order, sellingPlanId, productId, variantId, admin 
     update: { cycle }, // overwrite with latest cycle
   });
 
-  // 5) Clean tags and reapply
+  // 5) Clean tags (only our variant tag) and reapply
   const cleanedTags = stripAppTags(order.tags || []);
-  const updatedTags = [...new Set([...cleanedTags, tag])];
+  const updatedTags = [...new Set([...cleanedTags, monthlyTag, ...(variantTag ? [variantTag] : [])])];
 
   // 6) Update order in Shopify
   const mutation = `
@@ -197,12 +214,13 @@ async function processOrder({ order, sellingPlanId, productId, variantId, admin 
     }
   `;
 
+  const note = variantTag ? `${monthlyTag} | ${variantTag}` : monthlyTag;
   const result = await admin.graphql(mutation, {
     variables: {
       input: {
         id: order.id,
         tags: updatedTags,
-        note: tag,
+        note,
       },
     },
   });
@@ -213,7 +231,7 @@ async function processOrder({ order, sellingPlanId, productId, variantId, admin 
     throw new Error(resultData.data.orderUpdate.userErrors[0].message);
   }
 
-  return { cycle, tags: updatedTags, note: tag };
+  return { cycle, tags: updatedTags, note };
 }
 
 export const loader = () => {

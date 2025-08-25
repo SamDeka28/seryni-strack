@@ -37,6 +37,27 @@ export const action = async ({ request }) => {
       return json.data;
     }
 
+    function stripVariantTags(tags = []) {
+      return tags.filter(
+        (t) => !/^Buy \d+(?: Get \d+ Free)?$/i.test(t)
+      );
+    }
+
+    function computeVariantTag(variantTitle = "", cycle = 1) {
+      if (!variantTitle) return "";
+      if (cycle === 1) return variantTitle.trim();
+      const match = /Buy\s+(\d+)/i.exec(variantTitle);
+      if (match) {
+        const qty = match[1];
+        return `Buy ${qty}`;
+      }
+      return variantTitle.trim();
+    }
+
+    function computeMonthlyTag(cycle = 1) {
+      return cycle === 1 ? "Monthly-Free-Gift" : `Monthly-order-${cycle}-no-Gifts`;
+    }
+
     const orderGid = payload.admin_graphql_api_id;
     if (!orderGid) {
       console.log("No order GID in payload");
@@ -63,6 +84,7 @@ export const action = async ({ request }) => {
                 sellingPlan { sellingPlanId name }
                 variant {
                   id
+                  title
                   sku
                   product { id title }
                 }
@@ -194,18 +216,22 @@ export const action = async ({ request }) => {
       });
     }
 
-    const tag = cycle === 1 ? "Monthly-Free-Gift" : `Monthly-order-${cycle}-no-Gifts`;
-    const updatedTags = Array.from(new Set([...existingTags, tag]));
+    const variantTitle = subscriptionItem?.node?.variant?.title || firstItem?.variant?.title || "";
+    const monthlyTag = computeMonthlyTag(cycle);
+    const variantTag = computeVariantTag(variantTitle, cycle);
+
+    const cleanedTags = stripVariantTags(existingTags);
+    const updatedTags = Array.from(new Set([...cleanedTags, monthlyTag, ...(variantTag ? [variantTag] : [])]));
 
     await shopifyGraphQL(ORDER_UPDATE, {
       input: {
         id: orderGid,
         tags: updatedTags,
-        note: tag,
+        note: variantTag ? `${monthlyTag} | ${variantTag}` : monthlyTag,
       },
     });
 
-    console.log(`Order tagged as: ${tag}`);
+    console.log(`Order tagged as: ${variantTag ? `${monthlyTag} | ${variantTag}` : monthlyTag}`);
   } catch (err) {
     console.error("ORDER WEBHOOK FAILED", err);
   }
