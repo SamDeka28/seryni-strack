@@ -106,11 +106,11 @@ export const action = async ({ request }) => {
 };
 
 /**
- * Remove app-managed variant tags (keep legacy monthly tags)
+ * Remove app-managed monthly + variant tags (preserve all others)
  */
 function stripAppTags(tags = []) {
   return tags.filter(
-    (t) => !/^Buy \d+(?: Get \d+ Free)?$/i.test(t)
+    (t) => !/^(Monthly-(Free-Gift|order-\d+-no-Gifts)|Buy \d+(?: Get \d+ Free)?)$/i.test(t)
   );
 }
 
@@ -200,7 +200,7 @@ async function processOrder({ order, sellingPlanId, productId, variantId, varian
     update: { cycle }, // overwrite with latest cycle
   });
 
-  // 5) Clean tags (only our variant tag) and reapply
+  // 5) Clean tags (remove our monthly + variant tags) and reapply
   const cleanedTags = stripAppTags(order.tags || []);
   const updatedTags = [...new Set([...cleanedTags, monthlyTag, ...(variantTag ? [variantTag] : [])])];
 
