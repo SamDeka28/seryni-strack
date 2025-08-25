@@ -1,11 +1,10 @@
 import { authenticate } from "../shopify.server";
 import { json } from "@remix-run/node";
-import db from "../db.server";
 
 const shop = process.env.SHOP;
 
 export const action = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
+  await authenticate.admin(request);
 
   try {
     console.log("Starting subscription order sync...");
